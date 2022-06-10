@@ -5,6 +5,7 @@ import numpy as np
 from sklearn.datasets import load_iris
 from sklearn.feature_selection._base import SelectorMixin
 from sklearn.base import BaseEstimator, MetaEstimatorMixin
+from Ant import Ant
 data = load_iris()
 
 # %%
@@ -14,10 +15,11 @@ def compute_heuristic(X,y):
     spreads = np.max(conditionnal_means, axis=0)-np.min(conditionnal_means, axis=0)
     return (spreads - np.min(spreads))/(np.max(spreads)- np.mean(spreads))
 
-def single_ant_solution_construction(start, proba_matrix, estimator, metric, solutions, n_features):
+def single_ant_solution_construction(start, proba_matrix, estimator, metric, solutions, n_features, Xs, ys):
     ant = Ant(start, n_features)
     ant.run(proba_matrix)
-    solutions.append(ant.get_solution(estimator, metric))
+    solutions.append(ant.get_solution(estimator, metric, Xs, ys))
+
 
 class ACO_Selector(MetaEstimatorMixin, SelectorMixin, BaseEstimator):
     
@@ -58,10 +60,3 @@ class ACO_Selector(MetaEstimatorMixin, SelectorMixin, BaseEstimator):
             if l+1 < self.n_features : 
                 self.G['e'][solution[l],solution[l+1]] = min(self.Q_e*(self.n_features-i)/(cost*self.n_features) + self.G['e'][solution[l],solution[l+1]], self.e_pheromone_max)
             self.G['v'][solution[l]] = min(self.Q_v*(self.n_features-i)/(cost*self.n_features)+self.G['v'][solution[l]], self.v_pheromone_max)
-
-    
-
-        
-        
-
-

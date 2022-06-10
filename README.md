@@ -1,6 +1,6 @@
 # SWARMPY 🐜
 
-Swarmpy is a (will be) a Python 3.10 framework to solve some discrete and combinatorial NP-Hard problems in Machine Learning worklows.
+Swarmpy is (will be) a Python 3.10 framework to solve some discrete and combinatorial NP-Hard problems in Machine Learning worklows.
 
 First application is on feature selection. The main contribution is to go beyond limited univariate selections. 
 One should keep in mind that : 
