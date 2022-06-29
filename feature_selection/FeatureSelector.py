@@ -10,6 +10,15 @@ data = load_iris()
 
 # %%
 def compute_heuristic(X,y):
+    """
+    It computes the heuristic for each feature by computing the spread of the conditional means of the
+    feature for each class, and normalizing it by the maximum spread
+    
+    :param X: the data matrix
+    :param y: the class labels
+    :return: The heuristic is the ratio of the spread of the feature to the spread of the feature with
+    the smallest spread.
+    """
     classes = np.unique(y)
     conditionnal_means = [[np.mean(X[y==k,i]) for k in classes] for i in range(X.shape[1])]
     spreads = np.max(conditionnal_means, axis=0)-np.min(conditionnal_means, axis=0)
@@ -53,10 +62,10 @@ class ACO_Selector(MetaEstimatorMixin, SelectorMixin, BaseEstimator):
         self.solutions = solutions.sort(key = lambda x: x[1],reverse=True)
 
     def _update_pheromones(self):
-        self.G['e'] = max((1-self.rho_e)*self.G['e'], self.e_pheromone_min)
+        self.G['e'] = max((1-self.rho_e)*self.G['e'], self.e_pheromone_min) #Aucun sens ? 
         self.G['v'] = max((1-self.rho_v)*self.G['v'], self.v_pheromone_min)
 
         for (i, (solution, cost)), l in itertools.product(enumerate(self.solutions), range(self.n_features)):
             if l+1 < self.n_features : 
-                self.G['e'][solution[l],solution[l+1]] = min(self.Q_e*(self.n_features-i)/(cost*self.n_features) + self.G['e'][solution[l],solution[l+1]], self.e_pheromone_max)
+                self.G['e'][solution[l],solution[l+1]] = min(self.Q_e*(self.n_features-i)/(cost*self.n_features) + self.G['e'][solution[l],solution[l+1]], self.e_pheromone_max) # Symétrie de la matrice ? 
             self.G['v'][solution[l]] = min(self.Q_v*(self.n_features-i)/(cost*self.n_features)+self.G['v'][solution[l]], self.v_pheromone_max)
