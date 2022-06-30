@@ -15,7 +15,7 @@ def compute_distance(positions: np.ndarray) -> np.ndarray:
 
 def Antcoder(filepath: str =  'test_set/berlin52'):
 
-    solution, position = read_test_set(filepath, 52)
+    solution, position = read_test_set(filepath)
     distances = compute_distance(position)  
     e_pheromones = np.ones((len(position), len(position)), dtype=float)
 

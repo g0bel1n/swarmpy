@@ -1,6 +1,6 @@
 import numpy as np
 
-def read_test_set(filename:str, n_city:int):
+def read_test_set(filename:str):
     position = []
     with open(f'{filename}.txt') as f:
         position.extend(line.split()[1:] for line in f.readlines())

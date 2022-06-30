@@ -1,4 +1,4 @@
-from algorithms.BaseAnt import BaseAnt
+from .base_ant import BaseAnt
 import numpy as np
 
 
