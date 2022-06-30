@@ -8,7 +8,7 @@ class BaseAnt(ABC):
     def __init__(self, ant_params: dict, G: dict[str, np.ndarray]) -> None:
         self.params = ant_params
         self.G = G
-
+        
     @abstractmethod
     def __choose_next_node(
         self, available_nodes: np.ndarray, chosen_node: int, proba_matrix: np.ndarray
@@ -17,7 +17,8 @@ class BaseAnt(ABC):
 
     def __compute_proba_matrix(self) -> np.ndarray:
 
-        return (self.G["e"] ** self.params["alpha"]) * (self.G["heuristic"] ** (-self.params["beta"])
+        return (self.G["e"] ** self.params["alpha"]) * (
+            self.G["heuristic"] ** (-self.params["beta"])
         )
 
     def build_get(
@@ -56,4 +57,4 @@ class BaseAnt(ABC):
         cost += cost_matrix[solution[0], solution[-1]]
         solution.append(solution[0])
 
-        return solution, cost
+        return [solution, cost]

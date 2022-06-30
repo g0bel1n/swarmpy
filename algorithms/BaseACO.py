@@ -56,3 +56,4 @@ class BaseACO(ABC):
                 self.__daemon_actions()
                 nb_iter += 1
                 pbar.update(1)
+        return self
