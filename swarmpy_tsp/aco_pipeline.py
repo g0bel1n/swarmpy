@@ -5,7 +5,7 @@ from typing import Optional
 
 
 # > This class is an iterator that returns the next step of the ACO algorithm
-class ACO_Iterator(ACO_Step):
+class ACO_Pipeline(ACO_Step):
     def __init__(
         self,
         steps: list[tuple[str, ACO_Step]],

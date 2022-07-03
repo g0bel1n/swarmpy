@@ -7,7 +7,7 @@ from .pheromones_updater import (
 )
 from .planner import Planner, RandomizedPlanner
 from .solution_constructor import SolutionConstructor
-from .aco_iterator import ACO_Iterator
+from .aco_pipeline import ACO_Pipeline
 from .antcoder import Antcoder
 
 __all__ = [
@@ -17,7 +17,7 @@ __all__ = [
     'BestTourPheromonesUpdater',
     'SolutionConstructor',
     'Planner',
-    'ACO_Iterator', 
+    'ACO_Pipeline', 
     'Antcoder',
     'RandomizedPlanner'
 ]
