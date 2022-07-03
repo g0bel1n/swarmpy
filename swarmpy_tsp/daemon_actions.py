@@ -1,7 +1,6 @@
 import numpy as np
 import logging
 from .aco_step import ACO_Step
-import itertools
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(format="[SwarmPy] %(message)s", level=logging.INFO)
