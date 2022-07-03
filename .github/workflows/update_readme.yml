@@ -30,7 +30,7 @@ jobs:
     - name: Update readme notebook
       run: |
         python -m pip install jupyter nbconvert nbformat
-        jupyter nbconvert --to markdown  --execute notebooks/readme.ipynb --ExecutePreprocessor.kernel_name='python3'  --output README.md
+        jupyter nbconvert --ExecutePreprocessor.kernel_name='python3'  --output README.md --to markdown notebooks/readme.ipynb 
     
     - name: Move readme file
       run: |
