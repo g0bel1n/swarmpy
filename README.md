@@ -1,9 +1,23 @@
-# Welcome on Swarmpy_tsp Onboarding
+<h1 align=center> <b>SwarmPy</b> </h1>
 
+<p align="center">
 <a href="https://www.python.org/downloads/release/python-3100/" 
 target="_blank"><img src="https://img.shields.io/badge/python-3.10-blue.svg" alt="Python Version" /></a>
+<img src="https://img.shields.io/github/license/g0bel1n/TinyAutoML?style=flat-square" alt="Licence MIT" />
+</p>
 
-___
+---
+
+<p align="center">
+SwarmPy is an experimental library. <br/>
+It aims at providing a modulable framework to test and experiment on Ant Colony Optimzation (ACO) algorithms<br/>
+contact : lucas.saban[at]ensae.fr
+</p>
+
+
+---
+
+## ⚡️ Quick start 
 
 First let's import the librairies we will use
 
@@ -11,7 +25,6 @@ First let's import the librairies we will use
 ```python
 import os 
 import numpy as np
-import copy
 import matplotlib.pyplot as plt
 os.chdir('..')
 
@@ -22,6 +35,7 @@ from swarmpy_tsp import *
 The `ant_coder` function can load the TSP test sets of the test_set folder, namely :
 - berlin52 
 - ch130
+- Any test set you wish, as long you add them to folder following the same format.
 
 `G` is the graph representation of the problem. Its a dictionnary containing a uninitalized pheromones matrix, a heuristics matrix and a cost matrix
 
@@ -37,9 +51,11 @@ For example, let's instantiate two different algorithms
 
 > Careful ! The G dictionnary is modified inplace during computation. 
 
+Below, you can see an example of an ACO Pipeline
+
 
 ```python
-aco_with_Daemon = ACO_Iterator(
+aco_pipeline = ACO_Pipeline(
     [
         ("Planner", Planner({"alpha": 1.0, "beta": 2.0})),
         ("Sol", SolutionConstructor()),
@@ -47,67 +63,105 @@ aco_with_Daemon = ACO_Iterator(
         ("Updater", BestTourPheromonesUpdater()),
  ]
 )
-
-aco_without_Daemon = ACO_Iterator(
-    [
-        ("Planner", Planner({"alpha": 1.0, "beta": 2.0})),
-        ("Sol", SolutionConstructor()),
-        ("Updater", BestSoFarPheromonesUpdater(k=1)),
- ]
-)
-aco_with_Daemon_6 = ACO_Iterator(
-    [
-        ("Planner", Planner({"alpha": 1.0, "beta": 6.0})),
-        ("Sol", SolutionConstructor()),
-        ("DA", DaemonActions()),
-        ("Updater", BestTourPheromonesUpdater()),
- ]
-)
-
-aco_with_Daemon_0_5 = ACO_Iterator(
-    [
-        ("Planner", Planner({"alpha": 1.0, "beta": .5})),
-        ("Sol", SolutionConstructor()),
-        ("DA", DaemonActions()),
-        ("Updater", BestTourPheromonesUpdater()),
- ]
-)
-
 ```
 
+An `ACO_Pipeline` is composed by objects inhering from the **semi abstract** class `ACO_Step`. Those steps are more or less the main composants of any ACO Algorithms and are independtly builded so that one can use them in other situation or can easily build new blocks.
+Let's dive in. 
+
+## The `ACO_Steps`
+
+### `Planner`
+First of all, there is the `Planner` step. In very basic use case, it is not really important and only serve as the place to define your ants parameters. In more advanced cases, such as **iteration-dependent ants parameters**, that's where the magic happen.
+
+The `Planner` object have one parameter which is a `dict` of those parameters :
+
+-   `alpha`: coefficient associated to the pheromones trails
+-   `beta`: coefficient associated to the heuristic information
+-   `q`: Corresponds to the level of exploitation in Ant Colony System. When not precised, it is set to 0 which is equivalent to Ant System
+-   `mask`: Corresponds to a mask applied on the graph. It is useful when you want to reduce your problem to a subset of cities
+
+If you are note familliar with those notations please refer to appropriate ACO litterature (Dorigo, Stützle, ...)
+
+The `RandomizedPlanner` object, which inheritates from the `Planner`, introduces random sampling of ants parameters. It have two more parameters, `alpha_bounds` and `beta_bounds` which are the bounds of the uniform distribution from which each ant paramters is drawn. 
+
+> To add iteration-dependant ant parameters, I'd recommend to inheritate from `Planner` ant induce mutations in the `run` method which takes the iteration number as argument.
+
+An example of instanciation : 
+
+> To keep a parameter constant with `RandomizedPlanner`, setting low_bound = high_bound does the job
+
 
 ```python
-G1 = copy.deepcopy(G)
-G2 = copy.deepcopy(G)
-G3 = copy.deepcopy(G)
+planner_step = RandomizedPlanner(alpha_bounds=[1.0, 1.0], beta_bounds=[1., 6.], ant_params={'q':0.8})
+```
 
-solutions_w_daemon = aco_with_Daemon.run(G=G, iter_max=20)
+### The `SolutionConstructor`
+
+The `SolutionConstructor` step is at the core of ACO. It is where ants are actually going through the graph to build feasible solutions. No parameters are required. 
+For now, ants are running concurrently, using the `thread` built-in library of Python. Parallel computation should arrive soon.
+It should be remarked that solution are sorted by descending quality.
+An example of instanciation : 
+
+
+```python
+construction_step = SolutionConstructor()
+```
+
+### `DaemonActions`
+
+If the first steps are kind of necessary, this one can totally be exempted from the pipeline. It implements a 2-opt local search on the solutions built during the construction step.
+It as one parameter, `k`, that is the number of best solutions that shall go through local search. 
+
+An example of instanciation : 
+
+
+```python
+daemon_step = DaemonActions(k=2)
+```
+
+### `PheromonesUpdaters`
+
+It's the final step of an ACO algorithm iteration. It evaporates pheromones and update pheromone trails according the solution found. 
+General parameters are : 
+-   `rho` : the evaporation rate (can be set to 0 for no evaporation)
+-   `Q` : The normalization parameter of the pheromone reinforcement update (Q/cost)
+-   `bounds` : if precised, it implements MMAS policy of bounding pheromone trails
+
+Then there is 3 Updaters that inherites from the abstract base Updater :
+- `ProportionnalPheromonesUpdater` : basic updater, reinforcement in Q/cost for all solutions
+- `BestSoFarPheromonesUpdater` : Reinforces the `k` best paths found so far
+- `BestTourPheromonesUpdater`: Reinforces the `k` best paths found in the current lap
+
+Those steps can totally be combined or made iteration-dependant by inheritance.
+
+An example of instanciation : 
+
+
+```python
+ph_updater = BestTourPheromonesUpdater(k=2, bounds=[0.1, 1])
+```
+
+___
+
+
+The ACO_Pipeline object return the list of all solutions built during computation
+
+
+```python
+solutions_w_daemon = aco_pipeline.run(G=G, iter_max=20)
 scores_w_daemon = np.array([el[1] for el in solutions_w_daemon]) - opt_score
 
 plt.plot(scores_w_daemon)
+plt.xlabel('Iterations')
+plt.ylabel('Gap between best solution and optimal solution')
 plt.show()
 ```
 
-    SwarmPy | Best score : 6621.493929011727: 100%|██████████| 20/20 [00:29<00:00,  1.49s/it]
-
-
-
-
-
-    [<matplotlib.lines.Line2D at 0x7f917c867070>]
-
+    SwarmPy | Best score : 7544.365901904086: 100%|██████████| 20/20 [00:04<00:00,  4.51it/s] 
 
 
 
     
-![png](README_files/README_8_2.png)
+![png](README_files/README_18_1.png)
     
-
-
-
-```python
-#scores_DA_df = pd.DataFrame({'Regret with Daemon':scores_w_daemon,'Regret without Daemon':scores_wo_daemon,'Regret with Daemon _6':scores_w_daemon_6,'Regret with Daemon _0_5':scores_w_daemon_0_5 })
-#px.line(scores_DA_df,y=scores_DA_df.columns, x = np.arange(len(scores_w_daemon)))
-```
-
 
