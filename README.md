@@ -61,7 +61,7 @@ aco_pipeline = ACO_Pipeline(
         ("Sol", SolutionConstructor()),
         ("DA", DaemonActions()),
         ("Updater", BestTourPheromonesUpdater()),
- ]
+    ], iter_max=60
 )
 ```
 
@@ -148,7 +148,7 @@ The ACO_Pipeline object return the list of all solutions built during computatio
 
 
 ```python
-solutions_w_daemon = aco_pipeline.run(G=G, iter_max=20)
+solutions_w_daemon = aco_pipeline.run(G=G)
 scores_w_daemon = np.array([el[1] for el in solutions_w_daemon]) - opt_score
 
 plt.plot(scores_w_daemon)
@@ -165,3 +165,5 @@ plt.show()
 ![png](README_files/README_18_1.png)
     
 
+
+**For an advanced example of combining Pipelines, please refer to the advanced_swarmpy notebook**
