@@ -3,7 +3,6 @@ import numpy as np
 
 
 class AS_Ant(BaseAnt):
-
     def _BaseAnt__choose_next_node(
         self, available_nodes: np.ndarray, chosen_node: int, proba_matrix: np.ndarray
     ) -> int:

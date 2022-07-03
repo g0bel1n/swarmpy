@@ -1,4 +1,3 @@
-from array import array
 from typing import Optional
 import numpy as np
 from abc import ABC, abstractmethod
@@ -8,7 +7,7 @@ class BaseAnt(ABC):
     def __init__(self, ant_params: dict, G: dict[str, np.ndarray]) -> None:
         self.params = ant_params
         self.G = G
-        
+
     @abstractmethod
     def __choose_next_node(
         self, available_nodes: np.ndarray, chosen_node: int, proba_matrix: np.ndarray
@@ -36,10 +35,13 @@ class BaseAnt(ABC):
         )
 
         cost = 0
-        n_tot = proba_matrix.shape[0]
-        available_nodes = np.ones(n_tot).astype(bool)
+        
+        available_nodes = np.copy(self.params["mask"][0, :]) if 'mask' in self.params else np.ones(self.G['e'].shape[0],dtype=bool)
 
+        if not available_nodes[start]:
+            start = np.random.choice(np.where(available_nodes)[0])
         available_nodes[start] = False
+
         solution = [start]
         chosen_node = start
 

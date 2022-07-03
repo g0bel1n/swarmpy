@@ -4,12 +4,12 @@ from tqdm import tqdm
 from typing import Optional
 
 
+# > This class is an iterator that returns the next step of the ACO algorithm
 class ACO_Iterator(ACO_Step):
     def __init__(
         self,
         steps: list[tuple[str, ACO_Step]],
         verbose=0,
-        iter_max=100,
     ):
         self.steps = steps
         self.verbose = verbose
@@ -19,6 +19,14 @@ class ACO_Iterator(ACO_Step):
         self.iter_max: int
 
     def iter(self, run_params: dict[str, np.ndarray]):
+        """
+        > For each step in the pipeline, run the step with the arguments that it needs, and then update
+        the run_params dictionary with the output of the step
+        
+        :param run_params: dict[str, np.ndarray]
+        :type run_params: dict[str, np.ndarray]
+        :return: The solutions to the problem.
+        """
 
         for _, step in self.steps:
             step_args = {
@@ -31,6 +39,14 @@ class ACO_Iterator(ACO_Step):
         return run_params["solutions"]
 
     def run(self, G, iter_max=20):
+        """
+        > The function `run` takes as input a graph `G` and a maximum number of iterations `iter_max`
+        and returns a list of solutions
+        
+        :param G: The graph we want to solve
+        :param iter_max: the number of iterations to run the algorithm for, defaults to 20 (optional)
+        :return: The best solutions found by the algorithm.
+        """
         self.G = G
         self.iter_max = iter_max
         run_params = {

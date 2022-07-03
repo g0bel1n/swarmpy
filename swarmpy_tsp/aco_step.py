@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 
 
+# > This class is an abstract class that defines the interface for the ACO algorithm
 class ACO_Step(ABC):
 
     def __init__(self) -> None:
