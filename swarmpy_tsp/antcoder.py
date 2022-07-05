@@ -32,7 +32,7 @@ def Antcoder(filepath: str =  'test_set/berlin52'):
 
     solution, position = read_test_set(filepath)
     distances = compute_distance(position)  
-    e_pheromones = np.ones((len(position), len(position)), dtype=float)
+    e_pheromones = np.ones((len(position), len(position)), dtype=float)*0.5
 
     G = {"e": e_pheromones, "heuristic": distances, 'cost_matrix' : distances}
     opt_score = sum(distances[i-1,j-1] for i, j in itertools.pairwise(solution))

@@ -1,4 +1,5 @@
 from threading import Thread
+from typing import List
 
 import numpy as np
 
@@ -35,7 +36,7 @@ class SolutionConstructor(ACO_Step):
     def run(
         self,
         G: dict[str, np.ndarray],
-        ant_params: list[dict[str, np.ndarray]],
+        ant_params: List[dict[str, np.ndarray]],
         solutions: list,
     ):
         """
@@ -45,8 +46,8 @@ class SolutionConstructor(ACO_Step):
 
         :param G: dict[str, np.ndarray]
         :type G: dict[str, np.ndarray]
-        :param ant_params: list[dict[str, np.ndarray]]
-        :type ant_params: list[dict[str, np.ndarray]]
+        :param ant_params: List[dict[str, np.ndarray]]
+        :type ant_params: List[dict[str, np.ndarray]]
         :param solutions: list
         :type solutions: list
         :return: A dictionary with a key of "solutions" and a value of the list of solutions.

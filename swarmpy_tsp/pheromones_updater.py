@@ -1,6 +1,6 @@
 import itertools
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from typing import Any, Optional,List
 
 import numpy as np
 
@@ -13,7 +13,7 @@ class BasePheromonesUpdater(ABC):
         self,
         evaporation_rate: float = 0.6,
         Q: float = 1000,
-        bounds: Optional[list[float]] = None,
+        bounds: Optional[List[float]] = None,
     ) -> None:
         self.evaporation_rate = evaporation_rate
         self.Q = Q
@@ -26,7 +26,9 @@ class BasePheromonesUpdater(ABC):
             self.bounded = False
 
     @abstractmethod
-    def update(self, G: dict[str, np.ndarray], solutions: list[list])->dict[str, np.ndarray]:
+    def update(
+        self, G: dict[str, np.ndarray], solutions: List[list]
+    ) -> dict[str, np.ndarray]:
         pass
 
     def evaporate(self, G: dict[str, np.ndarray], ant_params: dict[str, Any]):
@@ -36,7 +38,7 @@ class BasePheromonesUpdater(ABC):
             G["e"] *= 1 - self.evaporation_rate
         return G
 
-    def run(self, G: dict[str, np.ndarray], solutions: list[list], ant_params: list):
+    def run(self, G: dict[str, np.ndarray], solutions: List[list], ant_params: list):
         G = self.evaporate(G=G, ant_params=ant_params[0])
         G = self.update(G=G, solutions=solutions)
 
@@ -49,7 +51,7 @@ class BasePheromonesUpdater(ABC):
 
 # It's a pheromones updater that updates pheromones proportionnally to the quality of the solution
 class ProportionnalPheromonesUpdater(BasePheromonesUpdater, ACO_Step):
-    def update(self, G: dict[str, np.ndarray], solutions: list[list]):
+    def update(self, G: dict[str, np.ndarray], solutions: List[list]):
 
         for solution, cost in solutions:
             for i, j in itertools.pairwise(solution):
@@ -64,22 +66,22 @@ class BestSoFarPheromonesUpdater(BasePheromonesUpdater, ACO_Step):
         self,
         evaporation_rate: float = 0.6,
         Q: float = 1000,
-        bounds: Optional[list[float]] = None,
+        bounds: Optional[List[float]] = None,
         k: int = 5,
     ) -> None:
         super().__init__(evaporation_rate, Q, bounds)
         self.bestSoFar = []
         self.k = k
 
-    def update(self, G: dict[str, np.ndarray], solutions: list[list]):
+    def update(self, G: dict[str, np.ndarray], solutions: List[list]):
         """
         > For each solution in the list of solutions, add the value of Q divided by the cost of the
         solution to the edge weights of the graph
-        
+
         :param G: the graph
         :type G: dict[str, np.ndarray]
-        :param solutions: list[list]
-        :type solutions: list[list]
+        :param solutions: List[list]
+        :type solutions: List[list]
         :return: The updated graph.
         """
         if len(self.bestSoFar) == 0:
@@ -98,26 +100,27 @@ class BestSoFarPheromonesUpdater(BasePheromonesUpdater, ACO_Step):
 
 # "This class is a pheromones updater that updates the pheromones on the k best paths found on the tour."
 
+
 class BestTourPheromonesUpdater(BasePheromonesUpdater, ACO_Step):
     def __init__(
         self,
         evaporation_rate: float = 0.6,
         Q: float = 1000,
-        bounds: Optional[list[float]] = None,
+        bounds: Optional[List[float]] = None,
         k: int = 5,
     ) -> None:
         super().__init__(evaporation_rate, Q, bounds)
         self.k = k
 
-    def update(self, G: dict[str, np.ndarray], solutions: list[list]):
+    def update(self, G: dict[str, np.ndarray], solutions: List[list]):
         """
         > For each solution in the first k solutions, add Q/cost to the edge between each pair of nodes
         in the solution
-        
+
         :param G: the graph
         :type G: dict[str, np.ndarray]
-        :param solutions: list[list]
-        :type solutions: list[list]
+        :param solutions: List[list]
+        :type solutions: List[list]
         :return: The updated graph.
         """
 

@@ -1,19 +1,19 @@
 import numpy as np
 from .aco_step import ACO_Step
 from tqdm import tqdm
-from typing import Optional
+from typing import Optional, List
 
 
 # > This class is an iterator that returns the next step of the ACO algorithm
 class ACO_Pipeline(ACO_Step):
     def __init__(
         self,
-        steps: list[tuple[str, ACO_Step]],
+        steps: List[tuple[str, ACO_Step]],
         verbose=0,
-        iter_max = 20,
-        as_step=False, 
-        last_step = False, 
-        metapipeline = False
+        iter_max=20,
+        as_step=False,
+        last_step=False,
+        metapipeline=False,
     ):
         self.steps = steps
         self.verbose = verbose
@@ -21,7 +21,7 @@ class ACO_Pipeline(ACO_Step):
         self.solutions = []
         self.ant_params: Optional[dict] = None
         self.iter_max: int = iter_max
-        self.as_step = False if  last_step else as_step
+        self.as_step = False if last_step else as_step
         self.last_step = last_step
         self.metapipeline = metapipeline
 
@@ -29,7 +29,7 @@ class ACO_Pipeline(ACO_Step):
         """
         > For each step in the pipeline, run the step with the arguments that it needs, and then update
         the run_params dictionary with the output of the step
-        
+
         :param run_params: dict[str, np.ndarray]
         :type run_params: dict[str, np.ndarray]
         :return: The solutions to the problem.
@@ -49,7 +49,7 @@ class ACO_Pipeline(ACO_Step):
         """
         > The function `run` takes as input a graph `G` and a maximum number of iterations `iter_max`
         and returns a list of solutions
-        
+
         :param G: The graph we want to solve
         :param iter_max: the number of iterations to run the algorithm for, defaults to 20 (optional)
         :return: The best solutions found by the algorithm.
@@ -68,16 +68,17 @@ class ACO_Pipeline(ACO_Step):
             run_params["nb_iter"] = i
             solutions = self.iter(run_params=run_params)
             solutions_bank.append(solutions[0])
-            pbar.set_description(f'SwarmPy |{"Step|" if self.as_step   else "Final Step|" if self.last_step else ""} Score : {solutions[-1][1] if self.metapipeline else solutions[0][1]}')
+            pbar.set_description(
+                f'SwarmPy |{"Step|" if self.as_step   else "Final Step|" if self.last_step else ""} Score : {solutions[-1][1] if self.metapipeline else solutions[0][1]}'
+            )
 
-
-        if self.as_step : 
+        if self.as_step:
             return {"G": self.G}
 
-        elif self.last_step : 
-            return {'solutions' : solutions_bank}
+        elif self.last_step:
+            return {"solutions": solutions_bank}
 
         elif self.metapipeline:
-            return {'solutions' : run_params['solutions'] }
+            return {"solutions": run_params["solutions"]}
 
-        return {'solutions' : solutions_bank}
+        return {"solutions": solutions_bank}
