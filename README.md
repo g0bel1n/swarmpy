@@ -157,7 +157,7 @@ plt.ylabel('Gap between best solution and optimal solution')
 plt.show()
 ```
 
-    SwarmPy | Score : 7793.8275879572375: 100%|██████████| 60/60 [00:13<00:00,  4.34it/s]
+    SwarmPy | Score : 7859.448968094198: 100%|██████████| 60/60 [00:13<00:00,  4.41it/s]
 
 
 
