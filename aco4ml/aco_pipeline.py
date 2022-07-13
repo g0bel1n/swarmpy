@@ -10,11 +10,13 @@ class ACO_Pipeline(ACO_Step):
     def __init__(
         self,
         steps: List[tuple[str, ACO_Step]],
+        id2hp : dict,
         verbose=0,
         iter_max=20,
         as_step=False,
         last_step=False,
         metapipeline=False,
+        n_feature_obj : int = 5
     ):
         self.steps = steps
         logging.basicConfig(level=verbose)
@@ -25,6 +27,9 @@ class ACO_Pipeline(ACO_Step):
         self.as_step = False if last_step else as_step
         self.last_step = last_step
         self.metapipeline = metapipeline
+        self.id2hp = id2hp
+
+        self.n_features : int
 
     def iter(self, run_params: dict[str, np.ndarray]):
         """
@@ -56,11 +61,14 @@ class ACO_Pipeline(ACO_Step):
         :return: The best solutions found by the algorithm.
         """
         self.G = G
+        self.n_features = G['e'].shape[0] - len(self.id2hp)
         run_params = {
             "ant_params": self.ant_params,
             "G": self.G,
             "solutions": self.solutions,
             "nb_iter": 0,
+            'id2hp' : self.id2hp,
+            'n_features' : self.n_features,
         }
 
         solutions_bank = []
