@@ -45,7 +45,7 @@ class DaemonActions(ACO_Step):
         assert how == "2-opt", ValueError("The only daemon action available is 2-opt")
         self.all_unique_solutions = []
 
-    def run(self, G: dict[str, np.ndarray], solutions: List[list]):
+    def run(self, G: dict[str, np.ndarray], solutions: List[list], ant_params: list):
         """
         > The function takes a list of solutions and returns it after applying local
         search to each of the k first solution.
@@ -57,9 +57,12 @@ class DaemonActions(ACO_Step):
         :return: The solutions are being returned.
         """
 
+        clean_sol, clean_ant_params = [],[]
+        for i in range(len(solutions)):
+            if solutions[i] not in self.all_unique_solutions :
+                clean_ant_params.append(ant_params[i])
+                clean_sol.append(solutions[i])
         
-        solutions = [sol for sol in solutions if sol not in self.all_unique_solutions]
-        
-        self.all_unique_solutions += solutions
+        self.all_unique_solutions += clean_sol
 
-        return {"solutions": solutions}
+        return {"solutions": clean_sol, "ant_params": clean_ant_params}

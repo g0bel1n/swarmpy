@@ -16,7 +16,6 @@ class ACO_Pipeline(ACO_Step):
         as_step=False,
         last_step=False,
         metapipeline=False,
-        n_feature_obj : int = 5
     ):
         self.steps = steps
         logging.basicConfig(level=verbose)
@@ -78,7 +77,7 @@ class ACO_Pipeline(ACO_Step):
             solutions = self.iter(run_params=run_params)
             solutions_bank.append(solutions[0])
             pbar.set_description(
-                f'SwarmPy |{"Step|" if self.as_step   else "Final Step|" if self.last_step else ""} Score : {solutions[-1][1] if self.metapipeline else solutions[0][1]}'
+                f'SwarmPy |{"Step|" if self.as_step   else "Final Step|" if self.last_step else ""} Score : {solutions[-1][1] if self.metapipeline else max(solutions_bank, key=lambda x: x[1])[1]}'
             )
 
         if self.as_step:

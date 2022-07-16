@@ -8,6 +8,8 @@ from sklearn.model_selection import StratifiedKFold
 
 from .aco_step import ACO_Step
 
+import warnings 
+
 
 # > This class is an abstract base class for updating pheromones
 class BasePheromonesUpdater(ABC):
@@ -36,32 +38,54 @@ class BasePheromonesUpdater(ABC):
             self.bounded = False
 
     def evaluate(
-        self, solutions: List[list], id2hp: dict, n_features: int, ant_params: list
+        self, solutions: List[list], id2hp: dict, ant_params: list
     ) -> List[list]:
         cv = StratifiedKFold(shuffle=True, n_splits=self.n_splits)
-        scores = np.zeros((len(solutions), 1))
+        scores = None
 
         params: List[dict] = []
-        for solution in solutions:
-            intermediate_list = dict([id2hp[_id] for _id in solution[n_features:]])
+        for solution, ant_param in zip(solutions, ant_params):
+            intermediate_list = dict(
+                [id2hp[_id] for _id in solution[ant_param["n_feature_obj"] :]]
+            )
             params.append(intermediate_list)
+
         for train_index, test_index in cv.split(self.X, self.y):
             X_train, X_test = self.X[train_index], self.X[test_index]
             y_train, y_test = self.y[train_index], self.y[test_index]
-            scores += np.array(
-                [
-                    self.estimator(**param)
-                    .fit(X_train[:, solution[: ant_param["n_feature_obj"]]], y_train)
-                    .score(X_test[:, solution[: ant_param["n_feature_obj"]]], y_test)
-                    for solution, param, ant_param in zip(solutions, params, ant_params)
-                ]
-            ).reshape((len(solutions), 1))
+            score = []
+            index_to_remove = []
+            for i, (solution, param, ant_param) in enumerate(zip(solutions, params, ant_params)):
+                try:
+                    score.append(
+                        self.estimator(**param)
+                        .fit(
+                            X_train[:, solution[: ant_param["n_feature_obj"]]], y_train
+                        )
+                        .score(
+                            X_test[:, solution[: ant_param["n_feature_obj"]]], y_test
+                        )
+                    )
+                except ValueError:
+                    index_to_remove.append(i)
 
+            assert len(index_to_remove)+len(score) == len(solutions), 'eyoooo'
+    
+            solutions = [sol for i,sol in enumerate(solutions) if i not in index_to_remove]
+            params = [sol for i,sol in enumerate(params) if i not in index_to_remove]
+            ant_params = [sol for i,sol in enumerate(ant_params) if i not in index_to_remove]
+
+            if scores is None:
+                scores = np.array(score).reshape((len(score), 1))
+            else:
+                scores += np.array(score).reshape((len(score), 1))
+
+        assert len(scores) == len(solutions), "error here buddy"
         scores /= self.n_splits
 
         solutions = list(zip(solutions, scores))
         solutions.sort(key=lambda x: x[1], reverse=True)
-        return solutions
+        return solutions, ant_params
 
     @abstractmethod
     def update(
@@ -84,9 +108,12 @@ class BasePheromonesUpdater(ABC):
         n_features: int,
     ):
         G = self.evaporate(G=G)
-        solutions = self.evaluate(
-            solutions, id2hp=id2hp, n_features=n_features, ant_params=ant_params
-        )
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            solutions, ant_params = self.evaluate(
+                solutions, id2hp=id2hp, ant_params=ant_params
+            )
         G = self.update(G=G, solutions=solutions)
 
         if self.bounded:
@@ -95,7 +122,7 @@ class BasePheromonesUpdater(ABC):
             G["v"][G["v"] > self.bounds[1]] = self.bounds[1]  # type: ignore
             G["v"][G["v"] < self.bounds[0]] = self.bounds[0]  # type: ignore
 
-        return {"G": G, "solutions": solutions}
+        return {"G": G, "solutions": solutions, "ant_params": ant_params}
 
 
 # It's a pheromones updater that updates pheromones proportionnally to the quality of the solution
@@ -144,7 +171,7 @@ class BestSoFarPheromonesUpdater(BasePheromonesUpdater, ACO_Step):
             self.bestSoFar = solutions[: self.k]
         else:
             self.bestSoFar = self.bestSoFar + solutions[: self.k]
-            self.bestSoFar.sort(key=lambda x: x[1])
+            self.bestSoFar.sort(key=lambda x: x[1], reverse=True)
             self.bestSoFar = self.bestSoFar[: self.k]
 
         for solution, score in self.bestSoFar:

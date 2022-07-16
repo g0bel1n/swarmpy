@@ -73,6 +73,4 @@ class SolutionConstructor(ACO_Step):
         for thread in threads:
             thread.join()
 
-        #solutions.sort(key=lambda x: x[1])
-
         return {"solutions": solutions}
