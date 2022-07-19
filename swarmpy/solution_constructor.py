@@ -8,7 +8,9 @@ from .Ants import ACS_Ant
 from .Ants.base_ant import BaseAnt
 
 
-def add_solution_to_list(solutions: list, start: int, Ant: BaseAnt, best_sol:list, **kwargs):
+def add_solution_to_list(
+    solutions: list, start: int, Ant: BaseAnt, best_sol: list, **kwargs
+):
     """
     It creates an ant of the given type, and then adds the solution it finds to the list of solutions
 
@@ -27,7 +29,7 @@ def add_solution_to_list(solutions: list, start: int, Ant: BaseAnt, best_sol:lis
 
 # This class is a subclass of the ACO_Step class, and it is used to construct the solution.
 class SolutionConstructor(ACO_Step):
-    def __init__(self, hp_map : list) -> None:
+    def __init__(self, hp_map: list) -> None:
         self.Ant = ACS_Ant
         self.hp_map = hp_map
 
@@ -37,9 +39,9 @@ class SolutionConstructor(ACO_Step):
     def run(
         self,
         G: dict[str, np.ndarray],
-        ant_params: List[dict[str, np.ndarray]],
+        ants_parameters: List[dict[str, np.ndarray]],
         solutions: list,
-        n_features : int
+        n_features: int,
     ):
         """
         > The function takes in a graph, a list of parameters for each ant, and a list of solutions. It
@@ -48,24 +50,29 @@ class SolutionConstructor(ACO_Step):
 
         :param G: dict[str, np.ndarray]
         :type G: dict[str, np.ndarray]
-        :param ant_params: List[dict[str, np.ndarray]]
-        :type ant_params: List[dict[str, np.ndarray]]
+        :param ants_parameters: List[dict[str, np.ndarray]]
+        :type ants_parameters: List[dict[str, np.ndarray]]
         :param solutions: list
         :type solutions: list
         :return: A dictionary with a key of "solutions" and a value of the list of solutions.
         """
         best_sol = solutions[0][0] if solutions else None
-        solutions= []
-        if len(ant_params) == 1:
-            ant_params *= G['e'].shape[0]
+        solutions = []
+        if len(ants_parameters) == 1:
+            ants_parameters *= G["e"].shape[0]
 
         threads = []
-        for i, params in enumerate(ant_params):
+        for i, ant_parameters in enumerate(ants_parameters):
             threads.append(
                 Thread(
                     target=add_solution_to_list,
                     args=(solutions, i, self.Ant, best_sol),
-                    kwargs={"G": G, "ant_params": params, 'n_features' : n_features, 'hp_map' : self.hp_map},
+                    kwargs={
+                        "G": G,
+                        "ant_parameters": ant_parameters,
+                        "n_features": n_features,
+                        "hp_map": self.hp_map,
+                    },
                 )
             )
             threads[-1].start()

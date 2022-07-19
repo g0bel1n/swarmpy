@@ -10,7 +10,7 @@ target="_blank"><img src="https://img.shields.io/badge/python-3.10-blue.svg" alt
 
 <p align="center">
 SwarmPy is an experimental library. <br/>
-It aims at providing a modulable framework to test and experiment on Ant Colony Optimzation (ACO) algorithms<br/>
+It aims at providing a modulable framework to test and experiment on Meta-optimization using Ant Colony Optimization<br/>
 contact : lucas.saban[at]ensae.fr
 </p>
 
@@ -28,20 +28,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 os.chdir('..')
 
-from swarmpy_tsp import *
+from swarmpy import *
 
 ```
 
-The `ant_coder` function can load the TSP test sets of the test_set folder, namely :
-- berlin52 
-- ch130
-- Any test set you wish, as long you add them to folder following the same format.
+The `Antcoder` function can build the 3 informative objects necessary for the ACO Pipeline object to work. 
 
 `G` is the graph representation of the problem. Its a dictionnary containing a uninitialized pheromone matrix, a heuristics matrix and a cost matrix
 
 
 ```python
-G, opt_score = Antcoder('test_set/berlin52')
+G, id2hp, hp_map = Antcoder(tree_params, X_train, y_train)
 ```
 
 Ant colony optmization algorithms can be built in the same fashion as a Pipeline object from `scikit-learn`. You only need to put the blocks in the right order.
@@ -52,15 +49,37 @@ Below, you can see an example of an ACO Pipeline
 
 
 ```python
-aco_pipeline = ACO_Pipeline(
-    [
-        ("Planner", Planner({"alpha": 1.0, "beta": 2.0})),
-        ("Sol", SolutionConstructor()),
-        ("DA", DaemonActions()),
-        ("Updater", BestTourPheromonesUpdater()),
-
-    ], 
-    iter_max=60
+    aco_pipeline = ACO_Pipeline(
+        [
+            (
+                "Planner",
+                Planner(
+                    {
+                        "alpha": 1.0,
+                        "beta": 2.0,
+                        "gamma": 2.0,
+                        "n_features_kept": n_features_kept,
+                        "n_hp": len(tree_params),
+                    }
+                ),
+            ),
+            ("Sol", SolutionConstructor(hp_map=hp_map)),
+            ("DA", DaemonActions()),
+            (
+                "Updater",
+                BestSoFarPheromonesUpdater(
+                    X=X_train,
+                    y=y_train,
+                    estimator=DecisionTreeClassifier,
+                    bounds=[0.1, 5],
+                    Q=0.05,
+                    evaporation_rate=0.149,
+                ),
+            ),
+        ],
+        n_iter=20,
+        id2hp=id2hp,
+    )
 )
 ```
 
@@ -74,10 +93,13 @@ First of all, there is the `Planner` step. In very basic use cases, it is not re
 
 The `Planner` object have one parameter which is a `dict` of those parameters :
 
--   `alpha`: coefficient associated to the **pheromone trails**
+-   `alpha`: coefficient associated to the **inter_nodes pheromone trails**
 -   `beta`: coefficient associated to the **heuristic information**
+-   `gamma` : coefficient associated to the **self pheromone trails**
 -   `q`: Corresponds to the **level of exploitation** in Ant Colony System. When not precised, it is set to 0 which is equivalent to Ant System
--   `mask`: Corresponds to a **mask applied on the graph**. It is useful when you want to reduce your problem to a subset of cities. If not precized, a generic all covering mask is set.
+-   `mask`: Corresponds to a **mask applied on the graph**. It is useful when you want to reduce your problem to a subset of features. If not precized, a generic all covering mask is set.
+-   `n_features_kept`: the number of features you want to keep
+-   `n_hp` : the number of hyperparameters. Basically it is len(parameter_grid)
 
 *If you are not familliar with those notations please refer to appropriate ACO litterature (Dorigo, Stützle, ...)*
 
@@ -87,35 +109,33 @@ The `RandomizedPlanner` object, which inheritates from the `Planner`, **introduc
 
 An example of instanciation : 
 
-> To keep a parameter constant with `RandomizedPlanner`, setting low_bound = high_bound does the job
+> To freeze a parameter with `RandomizedPlanner`, setting low_bound = high_bound does the job
 
 
 ```python
-planner_step = RandomizedPlanner(alpha_bounds=[1.0, 1.0], beta_bounds=[1., 6.], ant_params={'q':0.8})
+planner_step = RandomizedPlanner(alpha_bounds=[1.0, 1.0], beta_bounds=[1., 6.], ants_parameters={'q':0.8})
 ```
 
 ### The `SolutionConstructor`
 
 The `SolutionConstructor` step is at the core of ACO. It is where ants are actually **going through the graph** to build feasible solutions. No parameters are required. 
 For now, ants are running concurrently, using the `thread` built-in library of Python. Parallel computation should arrive soon.
-It should be remarked that solution are sorted by descending quality.
+It should be remarked that solutions are sorted by ascending quality.
+It requires the hp_map dict from AntCoder
 An example of instanciation : 
 
 
 ```python
-construction_step = SolutionConstructor()
+construction_step = SolutionConstructor(hp_map=hp_map)
 ```
 
 ### `DaemonActions`
 
-If the first steps are kind of necessary, this one can totally be exempted from the pipeline. It implements a **2-opt local search** on the solutions built during the construction step.
-It as one parameter, `k`, that is the number of best solutions that shall go through local search. 
-
-An example of instanciation : 
-
+It prevents solution that have already been evaluated to be evaluated again.
+Sort of a filter.
 
 ```python
-daemon_step = DaemonActions(k=2)
+daemon_step = DaemonActions()
 ```
 
 ### `PheromonesUpdaters`
@@ -143,27 +163,6 @@ ph_updater = BestTourPheromonesUpdater(k=2, bounds=[0.1, 1])
 ___
 
 ## Now you can play with it !
-
-The ACO_Pipeline object return the list of all solutions built during computation
-
-
-```python
-solutions_w_daemon = aco_pipeline.run(G=G)
-scores_w_daemon = np.array([el[1] for el in solutions_w_daemon['solutions']]) - opt_score
-
-plt.plot(scores_w_daemon)
-plt.xlabel('Iterations')
-plt.ylabel('Gap between best solution and optimal solution')
-plt.show()
-```
-
-    SwarmPy | Score : 7859.448968094198: 100%|██████████| 60/60 [00:13<00:00,  4.41it/s]
-
-
-
-    
-![png](README_files/README_18_1.png)
-    
 
 
 **For an advanced example of combining Pipelines, please refer to the advanced_swarmpy notebook**

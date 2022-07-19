@@ -1,9 +1,7 @@
 import numpy as np
 import itertools
-from copy import deepcopy
 
-
-def compute_heuristic(X, y):
+def normalized_interclass_absolute_spread(X, y):
     """
     It computes the heuristic for each feature by computing the spread of the conditional means of the
     feature for each class, and normalizing it by the maximum spread
@@ -21,36 +19,47 @@ def compute_heuristic(X, y):
     return (spreads - np.min(spreads)) / (np.max(spreads) - np.min(spreads))
 
 
-def Antcoder(model_params: dict, X: np.ndarray, y: np.ndarray):
+def Antcoder(hyperparameters_grid: dict, X: np.ndarray, y: np.ndarray):
 
-    params_lens = [len(v) for v in model_params.values()]
+    hyperparameters_grid_sizes = [len(v) for v in hyperparameters_grid.values()]
 
-    total_len = np.sum(params_lens)
-    #%%
+    total_len = np.sum(hyperparameters_grid_sizes)
+
     e_phero_matrix = np.ones((X.shape[1] + total_len, X.shape[1] + total_len))
-    v_phero_matrix = deepcopy(e_phero_matrix)
-    regularization = deepcopy(e_phero_matrix)
-    heuristic = deepcopy(e_phero_matrix)
+    v_phero_matrix = np.ones_like(e_phero_matrix)
+    regularization = np.ones_like(e_phero_matrix)
+    heuristic = np.ones_like(e_phero_matrix)
+
     heuristic[: X.shape[1], : X.shape[1]] = heuristic[
         : X.shape[1], : X.shape[1]
-    ] @ np.diag(compute_heuristic(X, y))
+    ] @ np.diag(normalized_interclass_absolute_spread(X, y))
 
-    params_lens = [0] + list(np.cumsum(params_lens))
-    for n1, n2 in itertools.pairwise(params_lens):
+    hyperparameters_index_bounds = [0] + list(
+        np.cumsum(hyperparameters_grid_sizes)
+    )  # if there is k parameter 1 and n parameter 2, then hyperparameters_index_bounds = [0, k, n+k]
+
+    for n1, n2 in itertools.pairwise(hyperparameters_index_bounds):
         regularization[
             X.shape[1] + n1 : X.shape[1] + n2, X.shape[1] + n1 : X.shape[1] + n2
         ] = 0
 
     compt = 0
+
+    #Converts the index of an hyperparameter value to {'parameter_1' : parameter_value}
+    #It is for compatibility with scikit-learn estimators
     id2hp = {}
-    for name, params in model_params.items():
-        for value_parameter in params:
-            id2hp[X.shape[1] + compt] = [name,value_parameter]
+    for hyperparameter_name, hyperparameter_values in hyperparameters_grid.items():
+        for hyperparameter_value in hyperparameter_values:
+            id2hp[X.shape[1] + compt] = [hyperparameter_name, hyperparameter_value]
             compt += 1
 
-    return {
-        "e": e_phero_matrix * 0.5,
-        "v": v_phero_matrix * 0.5,
-        "heuristic": heuristic,
-        "regularization": regularization.astype(bool),
-    }, id2hp,params_lens
+    return (
+        {
+            "e": e_phero_matrix * 0.5,
+            "v": v_phero_matrix * 0.5,
+            "heuristic": heuristic,
+            "regularization": regularization.astype(bool),
+        },
+        id2hp,
+        hyperparameters_index_bounds,
+    )

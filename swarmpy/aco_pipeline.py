@@ -10,25 +10,19 @@ class ACO_Pipeline(ACO_Step):
     def __init__(
         self,
         steps: List[tuple[str, ACO_Step]],
-        id2hp : dict,
+        id2hp: dict,
         verbose=0,
-        iter_max=20,
-        as_step=False,
-        last_step=False,
-        metapipeline=False,
+        n_iter=20,
     ):
         self.steps = steps
         logging.basicConfig(level=verbose)
         self.G: dict[str, np.ndarray]
         self.solutions = []
-        self.ant_params: Optional[dict] = None
-        self.iter_max: int = iter_max
-        self.as_step = False if last_step else as_step
-        self.last_step = last_step
-        self.metapipeline = metapipeline
+        self.ants_parameters: Optional[dict] = None
+        self.n_iter: int = n_iter
         self.id2hp = id2hp
 
-        self.n_features : int
+        self.n_features: int
 
     def iter(self, run_params: dict[str, np.ndarray]):
         """
@@ -52,41 +46,32 @@ class ACO_Pipeline(ACO_Step):
 
     def run(self, G):
         """
-        > The function `run` takes as input a graph `G` and a maximum number of iterations `iter_max`
+        > The function `run` takes as input a graph `G` and a maximum number of iterations `n_iter`
         and returns a list of solutions
 
         :param G: The graph we want to solve
-        :param iter_max: the number of iterations to run the algorithm for, defaults to 20 (optional)
+        :param n_iter: the number of iterations to run the algorithm for, defaults to 20 (optional)
         :return: The best solutions found by the algorithm.
         """
         self.G = G
-        self.n_features = G['e'].shape[0] - len(self.id2hp)
+        self.n_features = G["e"].shape[0] - len(self.id2hp)
         run_params = {
-            "ant_params": self.ant_params,
+            "ants_parameters": self.ants_parameters,
             "G": self.G,
             "solutions": self.solutions,
             "nb_iter": 0,
-            'id2hp' : self.id2hp,
-            'n_features' : self.n_features,
+            "id2hp": self.id2hp,
+            "n_features": self.n_features,
         }
 
         solutions_bank = []
-        pbar = tqdm(range(self.iter_max), desc="SwarmPy", ascii="░▒█")
+        pbar = tqdm(range(self.n_iter), desc="SwarmPy", ascii="░▒█")
         for i in pbar:
             run_params["nb_iter"] = i
             solutions = self.iter(run_params=run_params)
             solutions_bank.append(solutions[0])
             pbar.set_description(
-                f'SwarmPy |{"Step|" if self.as_step   else "Final Step|" if self.last_step else ""} Score : {solutions[-1][1] if self.metapipeline else max(solutions_bank, key=lambda x: x[1])[1]}'
+                f"SwarmPy | Score : {max(solutions_bank, key=lambda x: x[1])[1]}"
             )
-
-        if self.as_step:
-            return {"G": self.G}
-
-        elif self.last_step:
-            return {"solutions": solutions_bank}
-
-        elif self.metapipeline:
-            return {"solutions": run_params["solutions"]}
 
         return {"solutions": solutions_bank}

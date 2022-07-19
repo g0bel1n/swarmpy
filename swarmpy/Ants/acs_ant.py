@@ -11,7 +11,7 @@ class ACS_Ant(BaseAnt):
         probas = proba_matrix[chosen_node, available_nodes]
         probas /= np.sum(probas)
 
-        if np.random.uniform()< self.params['q'] : #exploitation
+        if np.random.uniform()< self.ant_parameters['q'] : #exploitation
             return np.where(available_nodes)[0][np.argmax(probas)]
             
         else :  #exploration
