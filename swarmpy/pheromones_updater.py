@@ -130,11 +130,12 @@ class ProportionnalPheromonesUpdater(BasePheromonesUpdater, ACO_Step):
     def update(self, G: dict[str, np.ndarray], solutions: List[list]):
 
         for solution, score in solutions:
-            for i, j in itertools.pairwise(solution):
-                G["e"][i, j] += self.Q * score
-                G["e"][j, i] = G["e"][i, j]
+            for i in solution:
+                for j in solution :
+                    if i!=j : 
+                        G["e"][i, j] += self.Q * score
+                        G["e"][j, i] = G["e"][i, j]
                 G["v"][:, i] += self.Q * score
-            G["v"][:, j] += self.Q * score
 
         return G
 
@@ -175,11 +176,13 @@ class BestSoFarPheromonesUpdater(BasePheromonesUpdater, ACO_Step):
             self.bestSoFar = self.bestSoFar[: self.k]
 
         for solution, score in self.bestSoFar:
-            for i, j in itertools.pairwise(solution):
-                G["e"][i, j] += self.Q * score
-                G["e"][j, i] = G["e"][i, j]
+            for i in solution:
+                for j in solution :
+                    if i!=j : 
+                        G["e"][i, j] += self.Q * score
+                        G["e"][j, i] = G["e"][i, j]
                 G["v"][:, i] += self.Q * score
-            G["v"][:, j] += self.Q * score
+
         return G
 
 
@@ -212,10 +215,11 @@ class BestTourPheromonesUpdater(BasePheromonesUpdater, ACO_Step):
         """
 
         for solution, score in solutions[: self.k]:
-            for i, j in itertools.pairwise(solution):
-                G["e"][i, j] += self.Q * score
-                G["e"][j, i] = G["e"][i, j]
+            for i in solution:
+                for j in solution :
+                    if i!=j : 
+                        G["e"][i, j] += self.Q * score
+                        G["e"][j, i] = G["e"][i, j]
                 G["v"][:, i] += self.Q * score
-            G["v"][:, j] += self.Q * score
 
         return G
