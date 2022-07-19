@@ -6,3 +6,4 @@ notebooks/drzft_nb.ipynb
 .vscode
 sylvine/*
 data/*
+*.DS_Store
