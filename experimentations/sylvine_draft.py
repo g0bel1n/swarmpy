@@ -1,7 +1,7 @@
 # %%
 import os
 
-os.chdir('..')
+os.chdir("..")
 
 from time import perf_counter
 
@@ -33,7 +33,7 @@ y = (
 cut = int(0.8 * X.shape[0])
 
 X_train, y_train = X[:cut, :], y[:cut, :].reshape(cut)
-X_test, y_test = X[cut:, :], y[cut:, :].reshape(X.shape[0]-cut)
+X_test, y_test = X[cut:, :], y[cut:, :].reshape(X.shape[0] - cut)
 
 n_features_kept = 8
 
@@ -143,8 +143,8 @@ rfe.get_feature_names_out()
 best_params
 
 # %%
-clf.best_score_
-
+pipe.fit(X_train, y_train)
+np.mean(cross_val_score(pipe, X, y, scoring=make_scorer(balanced_accuracy_score)))
 # %%
 datapoints = [[x, y] for x, y in enumerate(G["v"][0, : X.shape[1]])]
 
