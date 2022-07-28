@@ -1,6 +1,7 @@
 import numpy as np
 import itertools
 
+
 def normalized_interclass_absolute_spread(X, y):
     """
     It computes the heuristic for each feature by computing the spread of the conditional means of the
@@ -45,8 +46,8 @@ def Antcoder(hyperparameters_grid: dict, X: np.ndarray, y: np.ndarray):
 
     compt = 0
 
-    #Converts the index of an hyperparameter value to {'parameter_1' : parameter_value}
-    #It is for compatibility with scikit-learn estimators
+    # Converts the index of an hyperparameter value to {'parameter_1' : parameter_value}
+    # It is for compatibility with scikit-learn estimators
     id2hp = {}
     for hyperparameter_name, hyperparameter_values in hyperparameters_grid.items():
         for hyperparameter_value in hyperparameter_values:

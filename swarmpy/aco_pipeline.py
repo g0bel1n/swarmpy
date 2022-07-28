@@ -68,8 +68,9 @@ class ACO_Pipeline(ACO_Step):
         pbar = tqdm(range(self.n_iter), desc="SwarmPy", ascii="░▒█")
         for i in pbar:
             run_params["nb_iter"] = i
-            solutions = self.iter(run_params=run_params)
-            solutions_bank.append(solutions[0])
+
+            if solutions := self.iter(run_params=run_params):
+                solutions_bank.append(solutions[0])
             pbar.set_description(
                 f"SwarmPy | Score : {max(solutions_bank, key=lambda x: x[1])[1]}"
             )

@@ -10,9 +10,10 @@ import pandas as pd
 import plotly.express as px
 from sklearn.feature_selection import RFE
 from sklearn.metrics import balanced_accuracy_score, make_scorer
-from sklearn.model_selection import GridSearchCV, cross_val_score
-from sklearn.pipeline import Pipeline
+from sklearn.model_selection import GridSearchCV, StratifiedKFold, cross_val_score
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.model_selection import StratifiedKFold
+
 from swarmpy import *
 
 from hyperparamers_grid import tree_params
@@ -30,49 +31,84 @@ y = (
     .to_numpy()
 )
 
-cut = int(0.8 * X.shape[0])
+# X = np.random.uniform(size=50000).reshape((1000, 50))
+# y = (
+#     (np.sum([X[:, i] ** (i + 1) for i in range(1, 30) if i % 2 == 0], axis=0) > 1.0)
+#     .astype(int)
+#     .reshape(1000, 1)
+# )
 
-X_train, y_train = X[:cut, :], y[:cut, :].reshape(cut)
-X_test, y_test = X[cut:, :], y[cut:, :].reshape(X.shape[0] - cut)
 
-n_features_kept = 8
+n_features_kept = 10
 
 #%%
 
-means, variances, times = [], [], []
-for _ in range(10):
+    # search_space = {f"estimator__{k}": v for k, v in tree_params.items()}
+    # pipe = Pipeline(
+    #     [
+    #         (
+    #             "feature_selection",
+    #             RFE(DecisionTreeClassifier(), n_features_to_select=n_features_kept),
+    #         ),
+    #         ("estimator", DecisionTreeClassifier()),
+    #     ]
+    # )
+    # clf = GridSearchCV(estimator=pipe, param_grid=search_space)
+    # clf.fit(X_train, y_train)
+
+#%%
+    
+skf = StratifiedKFold(shuffle=True)
+aco_score = []
+not_aco_score = []
+
+for train_index, test_index in skf.split(X, y):
+    X_train, X_test = X[train_index], X[test_index]
+    y_train, y_test = y[train_index].reshape(len(train_index)), y[test_index].reshape(len(test_index))
+    start = perf_counter()
+    rfe = RFE(
+        DecisionTreeClassifier(), n_features_to_select=n_features_kept, step=1
+    ).fit(X_train, y_train)
+    support = rfe.get_support()
+    clf = GridSearchCV(
+        estimator=DecisionTreeClassifier(), param_grid=tree_params, refit=True
+    )
+    clf.fit(X_train[:, support], y_train)
+    time_classic = perf_counter() - start
+    print(f"temps HP : {time_classic}")
+
     G, id2hp, hp_map = Antcoder(tree_params, X_train, y_train)
 
     aco_pipeline = ACO_Pipeline(
-        [
-            (
-                "Planner",
-                Planner(
-                    {
-                        "alpha": 1.0,
-                        "beta": 2.0,
-                        "gamma": 2.0,
-                        "n_features_kept": n_features_kept,
-                        "n_hp": len(tree_params),
-                    }
-                ),
+    [
+        (
+            "Planner",
+            RandomizedPlanner(
+                alpha_bounds=[1.0, 2.0],
+                beta_bounds=[1.0, 1.0],
+                gamma_bounds=[1.0, 3.0],
+                ants_parameters={
+                    "n_features_kept": n_features_kept,
+                    "n_hp": len(tree_params),
+                },
             ),
-            ("Sol", SolutionConstructor(hp_map=hp_map)),
-            ("DA", DaemonActions()),
-            (
-                "Updater",
-                BestSoFarPheromonesUpdater(
-                    X=X_train,
-                    y=y_train,
-                    estimator=DecisionTreeClassifier,
-                    bounds=[0.1, 5],
-                    Q=0.05,
-                    evaporation_rate=0.149,
-                ),
+        ),
+        ("Sol", SolutionConstructor(hp_map=hp_map)),
+        ("DA", DaemonActions()),
+        (
+            "Updater",
+            BestSoFarPheromonesUpdater(
+                X=X_train,
+                y=y_train,
+                estimator=DecisionTreeClassifier,
+                bounds=[0.1, 5],
+                Q=0.05,
+                evaporation_rate=0.3,
             ),
-        ],
-        n_iter=20,
-        id2hp=id2hp,
+        ),
+    ],
+    n_iter=20,
+    id2hp=id2hp,
     )
 
     start = perf_counter()
@@ -84,54 +120,18 @@ for _ in range(10):
     lr_aco = DecisionTreeClassifier(**best_params).fit(X_train[:, best_cols], y_train)
     print(time_aco)
 
-    start = perf_counter()
-    search_space = {f"estimator__{k}": v for k, v in tree_params.items()}
-    pipe = Pipeline(
-        [
-            (
-                "feature_selection",
-                RFE(DecisionTreeClassifier(), n_features_to_select=n_features_kept),
-            ),
-            ("estimator", DecisionTreeClassifier()),
-        ]
-    )
-    clf = GridSearchCV(estimator=pipe, param_grid=search_space)
-    clf.fit(X_train, y_train)
-    time_classic = perf_counter() - start
-    print(f"temps HP : {time_classic}")
+    
+    aco_score += [balanced_accuracy_score(y, lr_aco.predict(X[:, best_cols]))]
+    not_aco_score += [balanced_accuracy_score(y, clf.best_estimator_.predict(X[:, support]))]
 
-    aco_score = cross_val_score(
-        lr_aco,
-        X_test[:, best_cols],
-        y_test,
-        cv=10,
-        scoring=make_scorer(balanced_accuracy_score),
-    )
-    not_aco_score = cross_val_score(
-        clf.best_estimator_,
-        X_test,
-        y_test,
-        cv=10,
-        scoring=make_scorer(balanced_accuracy_score),
-    )
-    print(f" ACO : {np.mean(aco_score)=} |  {np.std(aco_score)=} ")
-    print(f" Not ACO : {np.mean(not_aco_score)=} |  {np.std(not_aco_score)=}")
 
-    means.append([np.mean(aco_score), np.mean(not_aco_score)])
-    variances.append([np.std(aco_score), np.std(not_aco_score)])
-    times.append([time_aco, time_classic])
+print(f" ACO : {np.mean(aco_score)=} |  {np.std(aco_score)=} ")
+print(f" Not ACO : {np.mean(not_aco_score)=} |  {np.std(not_aco_score)=}")
 
-df = pd.DataFrame({"means": means, "variances": variances, "times": times})
+px.line(y=[aco_score, not_aco_score], x=list(range(5)),labels = ['ACO','Not ACO'])
 
 #%%
-
-df.to_csv("trials.csv")
-
-#%%
-np.mean(means, axis=0)
-
 # %%
-px.line(means)
 
 #%%
 px.line(times)

@@ -40,6 +40,7 @@ class RandomizedPlanner(Planner):
         self,
         alpha_bounds: list,
         beta_bounds: list,
+        gamma_bounds: list,
         ants_parameters: Optional[dict[str, Any]] = None,
     ):
         if ants_parameters is None:
@@ -47,6 +48,7 @@ class RandomizedPlanner(Planner):
         super().__init__(ants_parameters)
         self.alpha_bounds = alpha_bounds
         self.beta_bounds = beta_bounds
+        self.gamma_bounds = gamma_bounds
 
     def run(self, nb_iter: int, G: dict[str, np.ndarray]):
         """
@@ -68,8 +70,9 @@ class RandomizedPlanner(Planner):
             {
                 "alpha": np.random.uniform(*self.alpha_bounds),
                 "beta": np.random.uniform(*self.beta_bounds),
+                "gamma" : np.random.uniform(*self.gamma_bounds),
                 **self.ants_parameters,
             }
-            for _ in range(n)
-        ]
+            
+        ] * n
         return {"ants_parameters": params}
